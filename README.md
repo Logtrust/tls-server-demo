@@ -35,7 +35,7 @@ const server = net.createServer(conn => {
 })
 ```
 
-## `secure` And `secureSocket` Events
+## Bug: `secure` And `secureSocket` Events
 
 According to [the docs](https://nodejs.org/api/tls.html#tls_event_secureconnect),
 the `TLSSocket` class should emit a `secureConnect` event
@@ -47,4 +47,41 @@ This issue has been reported
 [here](https://github.com/nodejs/node/issues/10555)
 and
 [here](https://github.com/nodejs/node/issues/13368).
+
+The script `lib/simple-tls-new.js` shows the issue: a connection is secured
+using `new tls.TLSSocket()`, and only the `secure` event is emitted
+in the server.
+
+## Performance Regression: `tls.createSecurePair()` With Node.js v10.0.0 pre
+
+When creating many sockets and securing them with `tls.createSecurePair()`,
+packets are buffered in the `SecurePair` class depending on system load.
+When system load is high,
+packets are aggregated in order to send less `data` events to the stream.
+
+In the upcoming v10, after the great work by @addaleax in https://github.com/nodejs/node/pull/17882,
+`tls.createSecurePair()` uses `new tls.TLSSocket()` internally.
+This clears up a lot of messy code,
+but this buffering capability is lost.
+As a result, the secured server becomes less and less responsible.
+
+The script `lib/combined-tls.js` shows the issue.
+
+### Script Usage
+
+Run `node lib/combined-tls.js --help` for a summary of options.
+
+#### `--new -n`
+
+Use `new tls.TLSSocket()` instead of `tls.createSecurePair()`. Useful for testing with v8 or v9 only.
+
+#### `--readable -r`
+
+Use `readable` event (non-flowing mode) instead of `data` (flowing mode) for proxy streams.
+
+#### `--conn -n`
+
+Set the number of client connections, default is 2000.
+The script will start (cpus - 1) workers, so running stress will depend on the specs of the target machine.
+This parameter allows modifying the number of connections.
 

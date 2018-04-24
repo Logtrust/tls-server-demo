@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/alexfernandez/tls-server-demo/issues"
   },
-  "homepage": "https://github.com/alexfernandez/tls-server-demo#readme"
+  "homepage": "https://github.com/alexfernandez/tls-server-demo#readme",
+  "dependencies": {
+    "stdio": "^0.2.7"
+  }
 }
